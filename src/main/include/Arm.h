@@ -42,6 +42,12 @@ using namespace std;
 #define ballLoadHeight            1101 //unknown    11  
 #define ballLoadX                 368    //WRITE THIS ONE
 #define rocketTopHeightBallX      76
+#define startPositionX            100
+#define startPositionY            300
+#define yClearance                406   // only for the red bot?  
+#define sensorFrontToBack         406.4   
+#define sensorPivotPointX         234.95
+#define sensorPivotPointY         190.5   
 
 #define TURRET_LEFT               0 // find this 
 #define TURRET_RIGHT              0 // find this 
@@ -57,15 +63,16 @@ using namespace frc;
 class Arm {
   public:
     float turretPosition, shoulderAngle, elbowAngle, curX, curY;
-    bool startPosition;
+    bool startPosition, startPositionReal;
 
     Arm(int shoulderMotor, int elbowMotor, int turretMotor, int shoulderPot);
     Arm(CANSparkMax *shoulderMotor, WPI_TalonSRX *elbowMotor, 
-          WPI_TalonSRX *turretMotor, AnalogPotentiometer *shoulderPot);
+          WPI_TalonSRX *turretMotor, AnalogPotentiometer *shoulderPot, MicroLidar *microLidar);
 
     void Tick(XboxController *xbox, POVButton *dPad[4]);
     void moveToPosition(float x, float y);
     void printInfo();
+    void FindAngle(int frontSensor, int rearSensor);
   
   private:
     CANSparkMax *m_shoulderMotor;
@@ -73,6 +80,7 @@ class Arm {
     WPI_TalonSRX *m_elbowMotor, *m_turretMotor;
     AnalogPotentiometer *m_shoulderPot;
     PIDController *m_shoulderController;
+    MicroLidar *microLidar;
 
     void SetMotors();
     void ArmInit();
@@ -82,6 +90,8 @@ class Arm {
     double computeShoulderPosition(double angle);
     bool FindArmAngles(float x, float y, float *ang1, float *ang2);
     // void FindArmMinMax(float base, float *elbowMin, float *elbowMax);
+    bool HardPID(CANSparkMax *motor, float currentPosition, float finalPosition, float fastThreshold, float slowThreshold);
+    bool HardPID(WPI_TalonSRX *motor, float currentPosition, float finalPosition, float fastThreshold, float slowThreshold);
     float DeadZone(float input, float range);
 };
 
