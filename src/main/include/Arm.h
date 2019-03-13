@@ -25,22 +25,23 @@ using namespace std;
 #define armBaseSideX              342.9
 #define lowArmLength              812.8
 #define highArmLength             1079.5
-#define defaultX                  509.6                    // i made this up
-#define cargoHatchHeight          298          // 1
-#define cargoBallHeight           1003         // 2 need to increase height
-#define cargoBallLength           508                    // i made this up
-#define rocketHatchLowHeight      298  // check   3
-#define rocketBallLowHeight       679.45 // 4  It WORKS 
-#define rocketHatchMiddleHeight   1047.75 // 5   IT WORKS 
-#define rocketBallMiddleHeight    1422// 6 It WORKS
-#define rocketHatchTopHeight      1740// 7  IT WORKS
-#define rocketBallTopHeight       2096// 8  IT WORKS
+
+#define defaultX                  300 // able to change this
+#define cargoHatchHeight          298
+#define cargoBallHeight           1003
+#define cargoBallLength           508
+#define rocketHatchLowHeight      298
+#define rocketBallLowHeight       749
+#define rocketHatchMiddleHeight   1048
+#define rocketBallMiddleHeight    1422
+#define rocketHatchTopHeight      1740
+#define rocketBallTopHeight       2096
 #define ballPickUpX               279 
-#define rocketTopHeightX          76 // IT WORKS
+#define rocketTopHeightX          76
 #define ballPickUpY               165 
-#define discLoadHeight            298// only if we are hooking it
-#define ballLoadHeight            1101 //unknown    11  
-#define ballLoadX                 368    //WRITE THIS ONE
+#define discLoadHeight            228
+#define ballLoadHeight            1101
+#define ballLoadX                 368
 #define rocketTopHeightBallX      76
 #define startPositionX            100
 #define startPositionY            300
@@ -49,9 +50,9 @@ using namespace std;
 #define sensorPivotPointX         234.95
 #define sensorPivotPointY         190.5   
 
-#define TURRET_LEFT               0 // find this 
-#define TURRET_RIGHT              0 // find this 
-#define TURRET_CENTER             0 // find this 
+#define TURRET_LEFT               998   // only for red bot
+#define TURRET_RIGHT              453   // only for red bot
+#define TURRET_CENTER             718.5 // only for red bot
 #define TURRET_NONE               0
 #define turretOffset              30.48
 
@@ -72,7 +73,7 @@ class Arm {
     void Tick(XboxController *xbox, POVButton *dPad[4]);
     void moveToPosition(float x, float y);
     void printInfo();
-    void FindAngle(int frontSensor, int rearSensor);
+    int FindAngle(int frontSensor, int rearSensor);
   
   private:
     CANSparkMax *m_shoulderMotor;
@@ -81,7 +82,7 @@ class Arm {
     AnalogPotentiometer *m_shoulderPot;
     PIDController *m_shoulderController;
     MicroLidar *microLidar;
-
+  
     void SetMotors();
     void ArmInit();
     bool validElbowPosition(double pos);

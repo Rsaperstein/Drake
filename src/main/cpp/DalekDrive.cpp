@@ -216,6 +216,12 @@ DalekDrive::Cartesian(frc::Joystick* stick,	double gyroAngle)
 		x = stick->GetX(); x = squareInput(DeadZone(x, .1));
 		y = stick->GetY(); y = squareInput(DeadZone(y, .1));
 		z = stick->GetTwist(); z = squareInput(squareInput(DeadZone(z, .1))) / 5;
+		// if (stick->GetButton(Joystick::ButtonType::kTriggerButton)) {
+		// 	x /= 1000;
+		// 	y /= 1000;
+		// 	z /= 1000;
+		// 	cout << "SHOULD BE LOWERING\n";
+		// }
 		m_mecanum->DriveCartesian(-x, y, -z, gyroAngle);
 	}
 }
@@ -273,25 +279,25 @@ DalekDrive::InitDalekDrive(void)
     m_leftMotor[FRONT]->SetCANTimeout(CAN_TIMEOUT);
 	m_leftMotor[FRONT]->SetIdleMode(CANSparkMax::IdleMode::kBrake);
     m_leftMotor[FRONT]->SetSmartCurrentLimit(STALL_LIMIT, FREE_LIMIT, 0);
-	m_leftMotor[FRONT]->SetOpenLoopRampRate(RAMP_RATE);                  // used to be SetRampRate... update i guess... check if this is oprn or closed
+	m_leftMotor[FRONT]->SetOpenLoopRampRate(RAMP_RATE);
 	m_leftMotor[FRONT]->SetInverted(true);
 
     m_rightMotor[FRONT]->SetCANTimeout(CAN_TIMEOUT);
 	m_rightMotor[FRONT]->SetIdleMode(CANSparkMax::IdleMode::kBrake);
     m_rightMotor[FRONT]->SetSmartCurrentLimit(STALL_LIMIT, FREE_LIMIT, 0);
-	m_rightMotor[FRONT]->SetOpenLoopRampRate(RAMP_RATE);                // same
+	m_rightMotor[FRONT]->SetOpenLoopRampRate(RAMP_RATE);
 	m_rightMotor[FRONT]->SetInverted(true);
 
     m_leftMotor[REAR]->SetCANTimeout(CAN_TIMEOUT);
   	m_leftMotor[REAR]->SetIdleMode(CANSparkMax::IdleMode::kBrake);
     m_leftMotor[REAR]->SetSmartCurrentLimit(STALL_LIMIT, FREE_LIMIT, 0);
-	m_leftMotor[REAR]->SetOpenLoopRampRate(RAMP_RATE);                  // same
+	m_leftMotor[REAR]->SetOpenLoopRampRate(RAMP_RATE);
 	m_leftMotor[REAR]->SetInverted(true);
 
     m_rightMotor[REAR]->SetCANTimeout(CAN_TIMEOUT);
 	m_rightMotor[REAR]->SetIdleMode(CANSparkMax::IdleMode::kBrake);
     m_rightMotor[REAR]->SetSmartCurrentLimit(STALL_LIMIT, FREE_LIMIT, 0);
-	m_rightMotor[REAR]->SetOpenLoopRampRate(RAMP_RATE);                 // same
+	m_rightMotor[REAR]->SetOpenLoopRampRate(RAMP_RATE);
 	m_rightMotor[REAR]->SetInverted(true);
 
     m_leftMotor[FRONT]->StopMotor();  m_leftMotor[REAR]->StopMotor();

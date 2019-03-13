@@ -22,7 +22,9 @@ Arm::Arm(CANSparkMax *shoulderMotor, WPI_TalonSRX *elbowMotor, WPI_TalonSRX *tur
     m_shoulderPot          = shoulderPot;
     m_shoulderMotorEncoder = new CANEncoder(*m_shoulderMotor);
     m_shoulderController   = new PIDController(0.0, 0.0, 0.0, m_shoulderPot, m_shoulderMotor);
-    this->microLidar = microLidar;
+    #ifdef USE_LIDAR
+        this->microLidar = microLidar;
+    #endif
     ArmInit();
 }
 
@@ -41,6 +43,8 @@ Arm::ArmInit()
 	m_elbowMotor->Config_kI(0, 0.001, 0);
     m_elbowMotor->Config_kD(0, 4.0, 0);
     m_elbowMotor->ConfigClosedloopRamp(0.75);
+    m_elbowMotor->ConfigPeakCurrentDuration(100);
+    m_elbowMotor->ConfigPeakCurrentLimit(40);
 
     // shoulder motor PID control
     m_shoulderController->SetPID(7.0, 0.0, 0.0);
@@ -48,12 +52,16 @@ Arm::ArmInit()
     m_shoulderController->Reset();
 
  	m_shoulderMotor->SetIdleMode(CANSparkMax::IdleMode::kBrake);
-    m_shoulderMotor->SetSmartCurrentLimit(60, 2, 0);
+    m_shoulderMotor->SetSmartCurrentLimit(40, 2, 0);
 	m_shoulderMotor->SetOpenLoopRampRate(0.5);
 
+    m_turretMotor->SetNeutralMode(NeutralMode::Brake);
     m_turretMotor->ConfigSelectedFeedbackSensor(FeedbackDevice::Analog, 0, 0);
     m_turretMotor->ConfigFeedbackNotContinuous(true);
     m_turretMotor->ConfigAllowableClosedloopError(0, 0, 0);
+    m_turretMotor->ConfigPeakCurrentDuration(100);
+    m_turretMotor->ConfigPeakCurrentLimit(40);
+    m_turretMotor->ConfigClosedloopRamp(0.5);
 
     //curX = 609.6;
     //curY = 609.6;
@@ -166,11 +174,20 @@ Arm::Tick(XboxController *xbox, POVButton *dPad[])
                 SmartDashboard::PutBoolean("reach", false);
             }
         }
+        #ifdef USE_LIDAR
+            if(xbox->GetAButton()) { //This is for squaring off the turret
+                m_turretMotor->SetSelectedSensorPosition(FindAngle(microLidar->GetMeasurement(2), microLidar->GetMeasurement(3))); // If right side
+            } else if(xbox->GetBButton()) { //This is for squaring off the turret
+                m_turretMotor->SetSelectedSensorPosition(FindAngle(microLidar->GetMeasurement(0), microLidar->GetMeasurement(1))); // If front
+            } else if(xbox->GetXButton()) { //This is for squaring off the turret
+                m_turretMotor->SetSelectedSensorPosition(FindAngle(microLidar->GetMeasurement(4), microLidar->GetMeasurement(5))); // If left side
+            }
+            #endif
         SmartDashboard::PutNumber("turret move", turretMove);
         SmartDashboard::PutNumber("turret position", turretPosition);
-    }
     // cout << "\n\nShoulder Angle: " << shoulderAngle << "\n\nElbow Angle" << elbowAngle << "\n\nCur X: " << curX << "\n\nCur Y: " << curY;
     SetMotors();
+    }
 }
 
 void
@@ -292,7 +309,6 @@ Arm::SetMotors()
             }
         }
     }
-    // FindAngle(microLidar->GetMeasurement(2), microLidar->GetMeasurement(3));
 }
 
 // this function takes in the x distance from the target 
@@ -384,15 +400,18 @@ bool Arm::HardPID(WPI_TalonSRX *motor, float currentPosition, float finalPositio
     return false;
 }
 
-void Arm::FindAngle(int frontSensor, int rearSensor){
-    int angle;
+int Arm::FindAngle(int frontSensor, int rearSensor){
+    #ifdef USE_LIDAR
+        int angle;
 
-    if(frontSensor > rearSensor) {
-        angle = int(M_PI / 2 + atan((frontSensor - rearSensor) / sensorFrontToBack));
-    }
-    else if(rearSensor > frontSensor) {
-        angle = int(M_PI / 2 - atan((rearSensor - frontSensor) / sensorFrontToBack));
-    }
-    SmartDashboard::PutNumber("Angle", angle); //Testing only
-    // m_turretMotor->SetSelectedSensorPosition(angle);
+        if(frontSensor > rearSensor) {
+            angle = int(M_PI / 2 + atan((frontSensor - rearSensor) / sensorFrontToBack));
+        }
+        else if(rearSensor > frontSensor) {
+            angle = int(M_PI / 2 - atan((rearSensor - frontSensor) / sensorFrontToBack));
+        }
+        SmartDashboard::PutNumber("Angle", angle); //Testing only
+        // m_turretMotor->SetSelectedSensorPosition(angle);
+        return angle;
+    #endif
 }
