@@ -292,7 +292,7 @@ Arm::SetMotors()
             }
         }
     }
-    FindAngle(microLidar->GetMeasurement(2), microLidar->GetMeasurement(3));
+    // FindAngle(microLidar->GetMeasurement(2), microLidar->GetMeasurement(3));
 }
 
 // this function takes in the x distance from the target 
