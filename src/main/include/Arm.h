@@ -25,6 +25,7 @@ using namespace std;
 #define armBaseSideX              342.9
 #define lowArmLength              812.8
 #define highArmLength             1079.5
+#define clawLength                228.6
 
 #define defaultX                  300 // able to change this
 #define cargoHatchHeight          298
@@ -33,13 +34,13 @@ using namespace std;
 #define rocketHatchLowHeight      298
 #define rocketBallLowHeight       749
 #define rocketHatchMiddleHeight   1048
-#define rocketBallMiddleHeight    1422
+#define rocketBallMiddleHeight    1422 //in red bot -> preset is a few inches too high
 #define rocketHatchTopHeight      1740
 #define rocketBallTopHeight       2096
 #define ballPickUpX               279 
-#define rocketTopHeightX          76
+#define rocketTopHeightX          150
 #define ballPickUpY               165 
-#define discLoadHeight            228
+#define discLoadHeight            190F
 #define ballLoadHeight            1101
 #define ballLoadX                 368
 #define rocketTopHeightBallX      76
@@ -47,9 +48,16 @@ using namespace std;
 #define startPositionY            300   // untested
 #define yClearance                406   // only for the red bot?
 
+#ifdef RED_BOT
 #define TURRET_LEFT               998   // only for red bot
 #define TURRET_RIGHT              453   // only for red bot
 #define TURRET_CENTER             718.5 // only for red bot
+#else
+#define TURRET_LEFT               1001  // only for black bot
+#define TURRET_RIGHT              925   // only for black bot
+#define TURRET_CENTER             964   // only for black bot
+#endif
+
 #define TURRET_NONE               0
 #define turretOffset              30.48
 
@@ -80,6 +88,7 @@ class Arm {
 
     void SetMotors();
     void ArmInit();
+    bool ThirtyInchLimit();
     bool validElbowPosition(double pos);
     double computeElbowPosition(double angle);
     double computeElbowAngle();

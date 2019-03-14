@@ -53,8 +53,9 @@ Arm::ArmInit()
     m_turretMotor->ConfigFeedbackNotContinuous(true);
     m_turretMotor->ConfigAllowableClosedloopError(0, 0, 0);
 
-    curX = 609.6;
-    curY = 609.6;
+    //Starting position
+    curX = 100; //609.6
+    curY = 300; //609.6
     moveToPosition(curX, curY);
     startPosition = false;
     startPositionReal = false;
@@ -86,15 +87,12 @@ Arm::Tick(XboxController *xbox, POVButton *dPad[])
     m_turretMotor->Set(0);
     if (xbox->GetAButton()) {
         if (dPad[R]->Get()) {
-            // Place hatch low
             x = defaultX;
             y = rocketHatchLowHeight;
         } else if (dPad[T]->Get()) {
-            // Place ball on cargo ship
             x = cargoBallLength;
             y = cargoBallHeight; 
         } else if (dPad[L]->Get()) {
-            // Place hatch at cargo ship
             x = defaultX;
             y = cargoHatchHeight;
         } else if (dPad[B]->Get()) {
@@ -165,7 +163,6 @@ Arm::Tick(XboxController *xbox, POVButton *dPad[])
         SmartDashboard::PutNumber("turret move", turretMove);
         SmartDashboard::PutNumber("turret position", turretPosition);
     }
-    // cout << "\n\nShoulder Angle: " << shoulderAngle << "\n\nElbow Angle" << elbowAngle << "\n\nCur X: " << curX << "\n\nCur Y: " << curY;
     SetMotors();
 }
 
@@ -178,33 +175,46 @@ Arm::moveToPosition(float x, float y)
         elbowAngle = ang2;
         curX = x;
         curY = y;
-        std::cout << "MOVING TO: x = " << x << ", y = " << y << ", ang1 = " << ang1 << ", ang2 = " << ang2 << "\n";
+        // std::cout << "MOVING TO: x = " << x << ", y = " << y << ", ang1 = " << ang1 << ", ang2 = " << ang2 << "\n";
     } else {
-        std::cout << "INVALID ANGLE: x = " << x << ", y = " << y << ", ang1 = " << ang1 << ", ang2 = " << ang2 << "\n";
+        // std::cout << "INVALID ANGLE: x = " << x << ", y = " << y << ", ang1 = " << ang1 << ", ang2 = " << ang2 << "\n";
     }
 }
 
-// given the raw input, spit out an angle
-// double
-// Arm::computeElbowAngle()
-// {
-// #ifdef RED_BOT
-//     return ;
-// #else
-//     return 0;
-// #endif
-// }
+double
+Arm::computeElbowAngle()
+{
+#ifdef RED_BOT
+    return 0;                               // not found
+#else
+    return -.00591263 * m_elbowMotor->GetSelectedSensorPosition(0) + 3.954;
+#endif
+}
+
+double
+Arm::computeShoulderAngle() {
+#ifdef RED_BOT
+    return 0;                               // not found
+#else
+    return 5.95463 * m_shoulderPot->Get() - .0799629;
+#endif
+}
+
+double Arm::computeTurretAngle() {
+#ifdef RED_BOT
+    return 0;                               // not found
+#else
+    return -0.0413272 * m_turretMotor->GetSelectedSensorPosition(0) + 39.8119;
+#endif
+}
 
 double
 Arm::computeElbowPosition(double angle)
 {
 #ifdef RED_BOT
     return -173.267 * angle + 681.074;
-    // Less old numbers: -155.796 * angle + 672.796
-    // Old numbers: -169.284 * angle + 655.854
 #else
-    // need BLACK_BOT numbers...for now if defi-ned using red
-    return -169.284 * angle + 655.854;
+    return -169.12 * angle + 668.72;
 #endif
 }
 
@@ -213,7 +223,6 @@ Arm::validElbowPosition(double pos)
 {
 #ifdef RED_BOT
     if((pos < 100.0) || (pos > 700.0)) { // Original values were 200 and 600
-        std::cout << "Elbow position out of range: " << pos << "\n";
         return false;
     }
     return true;
@@ -228,9 +237,8 @@ Arm::computeShoulderPosition(double angle)
 {
 #ifdef RED_BOT
     return 0.166743 * angle + 0.251658;
-    // Old numbers: angle * 0.0837496 + 0.393355
-#else // BLACK_BOT
-    return angle * 0.163044 + 0.142698;
+#else
+    return .16731 * angle + .13496;
 #endif
 }
 
@@ -241,8 +249,34 @@ Arm::validShoulderPosition(double pos)
     return true;
 }
 
-// the functions used to set the setpoint needed to change arm positions
-// to currently requested angles
+// this is wrong, change
+bool 
+Arm::ThirtyInchLimit() {
+    float turretAngle = abs(computeTurretAngle());
+
+    bool withinLimit;
+
+    double d1 = armBaseFrontX;
+    double d2 = armBaseSideX;
+    double L1 = lowArmLength;
+    double L2 = highArmLength;
+    double x1;
+    
+    float x = abs(d1 * 1/(cos(turretAngle)));
+    float y = abs(d2 * 1/(cos(M_PI / 2 - turretAngle)));
+
+    if (x < y) {
+        x1 = x;
+    } else {
+        x1 = y;
+    }
+    float xtotal = L1 * cos(computeShoulderAngle()) + L2 * cos(elbowAngle + shoulderAngle - M_PI) + clawLength - x1;
+
+    //30 inches -> 762 mm
+    // true is within the limit, y is not
+    return xtotal < 762;
+}
+
 void
 Arm::SetMotors() 
 {
@@ -253,7 +287,7 @@ Arm::SetMotors()
     // be at and tell the motorcontroller to go there via the PID closed loop.
     // The talon can do this itself, for the shoulder motor controller we need
     // to do the PID control loop in software.  Elbow has a fairly large error
-    // which varies over the range +/- 20 units.  Shoulder moves slowly to it's
+    // which varies over the range +/- 20 units. Shoulder moves slowly to it's
     // position, which may or may not be an issue.
     SmartDashboard::PutNumber("calcX", turretOffset - armBaseFrontX + lowArmLength * cos(shoulderAngle) + highArmLength * cos(shoulderAngle + elbowAngle - M_PI));
     SmartDashboard::PutNumber("calcY", armBaseHeight + lowArmLength * sin(shoulderAngle) + highArmLength * sin(shoulderAngle + elbowAngle - M_PI));
@@ -339,12 +373,15 @@ Arm::printInfo()
     SmartDashboard::PutNumber("Shoulder position", m_shoulderPot->Get());
     // SmartDashboard::PutNumber("Shoulder close loop error", m_shoulderController->GetError());
     SmartDashboard::PutNumber("Shoulder Error", abs(computeShoulderPosition(shoulderAngle) - m_shoulderPot->Get()));
+    SmartDashboard::PutNumber("Turret Error", abs(m_turretMotor->GetSelectedSensorPosition(0) - turretPosition));
 
     // use equation backwords to find angles after fine movemenbt, then x and y
-    SmartDashboard::PutNumber("Shoulder Angle", shoulderAngle * 180.0 / M_PI);
-    SmartDashboard::PutNumber("Elbow Angle", elbowAngle * 180.0 / M_PI);
-    SmartDashboard::PutNumber("X", curX * .0393701);
-    SmartDashboard::PutNumber("Y", curY * .0393701);
+    SmartDashboard::PutNumber("Shoulder Angle", computeShoulderAngle() * 180.0 / M_PI);
+    SmartDashboard::PutNumber("Elbow Angle", computeElbowAngle() * 180.0 / M_PI);
+    SmartDashboard::PutNumber("Preset X", curX * .0393701);
+    SmartDashboard::PutNumber("Preset Y", curY * .0393701);
+
+    SmartDashboard::PutBoolean("Within 30\" range?", ThirtyInchLimit());
 }
 
 bool Arm::HardPID(CANSparkMax *motor, float currentPosition, float finalPosition, float fastThreshold, float slowThreshold) {
@@ -369,7 +406,9 @@ bool Arm::HardPID(CANSparkMax *motor, float currentPosition, float finalPosition
     return false;
 }
 
-bool Arm::HardPID(WPI_TalonSRX *motor, float currentPosition, float finalPosition, float fastThreshold, float slowThreshold) {
+// black one is wackadoo
+bool
+Arm::HardPID(WPI_TalonSRX *motor, float currentPosition, float finalPosition, float fastThreshold, float slowThreshold) {
     if (abs(currentPosition - finalPosition) > fastThreshold) {
         if (currentPosition > finalPosition) {
             motor->Set(.8);
