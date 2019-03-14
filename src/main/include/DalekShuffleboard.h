@@ -1,6 +1,6 @@
 #pragma once
 
-#define USE_LIDAR
+// #define USE_LIDAR
 
 #include <frc/WPILib.h>
 #include <MicroLidar.h>

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#define RED_BOT
+// #define RED_BOT
 
 #include <string>
 #include <frc/WPILib.h>

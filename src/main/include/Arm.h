@@ -82,8 +82,11 @@ class Arm {
     void ArmInit();
     bool validElbowPosition(double pos);
     double computeElbowPosition(double angle);
+    double computeElbowAngle();
     bool validShoulderPosition(double pos);
     double computeShoulderPosition(double angle);
+    double computeShoulderAngle();
+    double computeTurretAngle();
     bool FindArmAngles(float x, float y, float *ang1, float *ang2);
     bool HardPID(CANSparkMax *motor, float currentPosition, float finalPosition, float fastThreshold, float slowThreshold);
     bool HardPID(WPI_TalonSRX *motor, float currentPosition, float finalPosition, float fastThreshold, float slowThreshold);

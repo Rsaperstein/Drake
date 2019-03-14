@@ -42,13 +42,12 @@ Arm::ArmInit()
     m_elbowMotor->ConfigClosedloopRamp(0.75);
 
     // shoulder motor PID control
-    m_shoulderController->SetPID(7.0, 0.0, 0.0);
-    m_shoulderController->SetContinuous(false);
-    m_shoulderController->Reset();
-
- 	m_shoulderMotor->SetIdleMode(CANSparkMax::IdleMode::kBrake);
-    m_shoulderMotor->SetSmartCurrentLimit(60, 2, 0);
-	m_shoulderMotor->SetOpenLoopRampRate(0.5);
+    // m_shoulderController->SetPID(7.0, 0.0, 0.0);
+    // m_shoulderController->SetContinuous(false);
+    // m_shoulderController->Reset();
+ 	// m_shoulderMotor->SetIdleMode(CANSparkMax::IdleMode::kBrake);
+    // m_shoulderMotor->SetSmartCurrentLimit(60, 2, 0);
+	// m_shoulderMotor->SetOpenLoopRampRate(0.5);
 
     m_turretMotor->ConfigSelectedFeedbackSensor(FeedbackDevice::Analog, 0, 0);
     m_turretMotor->ConfigFeedbackNotContinuous(true);
@@ -185,6 +184,17 @@ Arm::moveToPosition(float x, float y)
     }
 }
 
+// given the raw input, spit out an angle
+// double
+// Arm::computeElbowAngle()
+// {
+// #ifdef RED_BOT
+//     return ;
+// #else
+//     return 0;
+// #endif
+// }
+
 double
 Arm::computeElbowPosition(double angle)
 {
@@ -250,14 +260,14 @@ Arm::SetMotors()
     float yHeight = armBaseHeight + lowArmLength * sin(shoulderAngle) + highArmLength * sin(shoulderAngle + elbowAngle - M_PI);
     if (startPosition) {
         // TODO go straingt to else if we are at the center already
-        if (abs(m_turretMotor->GetSelectedSensorPosition(0) - TURRET_CENTER) > 20 && (yHeight < yClearance || (curY == yClearance + 125 && curX == 150 && abs(computeShoulderPosition(shoulderAngle) - m_shoulderPot->Get()) >= .001))) {
+        if (abs(m_turretMotor->GetSelectedSensorPosition(0) - TURRET_CENTER) > 35 && (yHeight < yClearance || (curY == yClearance + 125 && curX == 150 && abs(computeShoulderPosition(shoulderAngle) - m_shoulderPot->Get()) >= .001))) {
             curX = 150;
             curY = yClearance + 125;
             moveToPosition(curX, curY);
             m_elbowMotor->Set(ctre::phoenix::motorcontrol::ControlMode::Position, computeElbowPosition(elbowAngle));
             HardPID(m_shoulderMotor, m_shoulderPot->Get(), computeShoulderPosition(shoulderAngle), .01, .001);
         } else {
-            if (HardPID(m_turretMotor, m_turretMotor->GetSelectedSensorPosition(0), TURRET_CENTER, 20, 3.5)) {
+            if (HardPID(m_turretMotor, m_turretMotor->GetSelectedSensorPosition(0), TURRET_CENTER, 20, 5)) {
                 startPosition = false;
                 startPositionReal = true;
                 curX = startPositionX;
@@ -284,7 +294,7 @@ Arm::SetMotors()
                 // m_shoulderController->SetEnabled(true);
             }
             if (turretPosition != TURRET_NONE) {
-                HardPID(m_turretMotor, m_turretMotor->GetSelectedSensorPosition(0), turretPosition, 20, 3.5);
+                HardPID(m_turretMotor, m_turretMotor->GetSelectedSensorPosition(0), turretPosition, 20, 5);
                 // m_turretMotor->Set(ctre::phoenix::motorcontrol::ControlMode::Position, turretPosition);
             }
         }
@@ -327,7 +337,8 @@ Arm::printInfo()
     SmartDashboard::PutNumber("Elbow close loop error", m_elbowMotor->GetClosedLoopError(0));
  
     SmartDashboard::PutNumber("Shoulder position", m_shoulderPot->Get());
-    SmartDashboard::PutNumber("Shoulder close loop error", m_shoulderController->GetError());
+    // SmartDashboard::PutNumber("Shoulder close loop error", m_shoulderController->GetError());
+    SmartDashboard::PutNumber("Shoulder Error", abs(computeShoulderPosition(shoulderAngle) - m_shoulderPot->Get()));
 
     // use equation backwords to find angles after fine movemenbt, then x and y
     SmartDashboard::PutNumber("Shoulder Angle", shoulderAngle * 180.0 / M_PI);
@@ -368,9 +379,9 @@ bool Arm::HardPID(WPI_TalonSRX *motor, float currentPosition, float finalPositio
     } else {
         if (abs(currentPosition - finalPosition) > slowThreshold) {
             if (currentPosition > finalPosition) {
-                motor->Set(.1);
+                motor->Set(.2);
             } else {
-                motor->Set(-.1);
+                motor->Set(-.2);
             }
         } else {
             motor->Set(0);

@@ -222,6 +222,10 @@ DalekDrive::Cartesian(frc::Joystick* stick,	double gyroAngle)
 		// 	z /= 1000;
 		// 	cout << "SHOULD BE LOWERING\n";
 		// }
+//		z = z + x + y;
+//		if(z > 1){
+//			z = 1;
+//		}
 		m_mecanum->DriveCartesian(-x, y, -z, gyroAngle);
 	}
 }
