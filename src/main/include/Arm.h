@@ -43,8 +43,8 @@ using namespace std;
 #define ballLoadHeight            1101
 #define ballLoadX                 368
 #define rocketTopHeightBallX      76
-#define startPositionX            100
-#define startPositionY            300
+#define startPositionX            100   // Good for red
+#define startPositionY            300   // Good for red
 #define yClearance                406   // only for the red bot?  
 #define sensorFrontToBack         406.4   
 #define sensorPivotPointX         234.95
@@ -73,7 +73,7 @@ class Arm {
     void Tick(XboxController *xbox, POVButton *dPad[4]);
     void moveToPosition(float x, float y);
     void printInfo();
-    int FindAngle(int frontSensor, int rearSensor);
+    float FindAngle(int frontSensor, int rearSensor);
   
   private:
     CANSparkMax *m_shoulderMotor;

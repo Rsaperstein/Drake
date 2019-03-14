@@ -182,11 +182,10 @@ Arm::Tick(XboxController *xbox, POVButton *dPad[])
             } else if(xbox->GetXButton()) { //This is for squaring off the turret
                 m_turretMotor->SetSelectedSensorPosition(FindAngle(microLidar->GetMeasurement(4), microLidar->GetMeasurement(5))); // If left side
             }
-            #endif
+        #endif
         SmartDashboard::PutNumber("turret move", turretMove);
         SmartDashboard::PutNumber("turret position", turretPosition);
-    // cout << "\n\nShoulder Angle: " << shoulderAngle << "\n\nElbow Angle" << elbowAngle << "\n\nCur X: " << curX << "\n\nCur Y: " << curY;
-    SetMotors();
+        SetMotors();
     }
 }
 
@@ -194,15 +193,10 @@ void
 Arm::moveToPosition(float x, float y)
 {
     float ang1 = -1, ang2 = -1;
-    if (FindArmAngles(x, y, &ang1, &ang2)) {
-        shoulderAngle = ang1;
-        elbowAngle = ang2;
-        curX = x;
-        curY = y;
-        std::cout << "MOVING TO: x = " << x << ", y = " << y << ", ang1 = " << ang1 << ", ang2 = " << ang2 << "\n";
-    } else {
-        std::cout << "INVALID ANGLE: x = " << x << ", y = " << y << ", ang1 = " << ang1 << ", ang2 = " << ang2 << "\n";
-    }
+    shoulderAngle = ang1;
+    elbowAngle = ang2;
+    curX = x;
+    curY = y;
 }
 
 double
@@ -214,7 +208,9 @@ Arm::computeElbowPosition(double angle)
     // Old numbers: -169.284 * angle + 655.854
 #else
     // need BLACK_BOT numbers...for now if defi-ned using red
-    return -169.284 * angle + 655.854;
+    return -169.12 * angle + 668.72; //input angle and output pot values 
+    // -.00591263 * pot + 3.954      -> input pot values and output angle
+    //Old Numbers: -169.284 * angle + 655.854
 #endif
 }
 
@@ -223,7 +219,6 @@ Arm::validElbowPosition(double pos)
 {
 #ifdef RED_BOT
     if((pos < 100.0) || (pos > 700.0)) { // Original values were 200 and 600
-        std::cout << "Elbow position out of range: " << pos << "\n";
         return false;
     }
     return true;
@@ -240,7 +235,9 @@ Arm::computeShoulderPosition(double angle)
     return 0.166743 * angle + 0.251658;
     // Old numbers: angle * 0.0837496 + 0.393355
 #else // BLACK_BOT
-    return angle * 0.163044 + 0.142698;
+    return .167931 * angle + .134296; // input angle output pot values
+    // 5.95462 * pot +  -.0799629      -> input pot values output angle 
+    //Old Numbers: angle * 0.1635044 + 0.142698
 #endif
 }
 
@@ -400,18 +397,17 @@ bool Arm::HardPID(WPI_TalonSRX *motor, float currentPosition, float finalPositio
     return false;
 }
 
-int Arm::FindAngle(int frontSensor, int rearSensor){
+float Arm::FindAngle(int frontSensor, int rearSensor){
     #ifdef USE_LIDAR
-        int angle;
+        float angle;
 
         if(frontSensor > rearSensor) {
-            angle = int(M_PI / 2 + atan((frontSensor - rearSensor) / sensorFrontToBack));
+            angle = M_PI / 2 + atan((frontSensor - rearSensor) / sensorFrontToBack);
         }
         else if(rearSensor > frontSensor) {
-            angle = int(M_PI / 2 - atan((rearSensor - frontSensor) / sensorFrontToBack));
+            angle = M_PI / 2 - atan((rearSensor - frontSensor) / sensorFrontToBack);
         }
         SmartDashboard::PutNumber("Angle", angle); //Testing only
-        // m_turretMotor->SetSelectedSensorPosition(angle);
         return angle;
     #endif
 }
