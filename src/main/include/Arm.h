@@ -19,13 +19,13 @@
 using namespace rev;
 using namespace std;
 
-// in millimeters (check these)
 #define armBaseHeight             342.9
 #define armBaseFrontX             387.35
 #define armBaseSideX              342.9
 #define lowArmLength              812.8
 #define highArmLength             1079.5
 #define clawLength                228.6
+#define turretOffset              30.48
 
 #define defaultX                  300 // able to change this
 #define cargoHatchHeight          298
@@ -34,32 +34,31 @@ using namespace std;
 #define rocketHatchLowHeight      298
 #define rocketBallLowHeight       749
 #define rocketHatchMiddleHeight   1048
-#define rocketBallMiddleHeight    1422 //in red bot -> preset is a few inches too high
+#define rocketBallMiddleHeight    1422 // in red bot -> preset is a few inches too high
 #define rocketHatchTopHeight      1740
 #define rocketBallTopHeight       2096
 #define ballPickUpX               279 
 #define rocketTopHeightX          150
 #define ballPickUpY               165 
-#define discLoadHeight            190F
+#define discLoadHeight            190
 #define ballLoadHeight            1101
 #define ballLoadX                 368
 #define rocketTopHeightBallX      76
-#define startPositionX            100   // untested
-#define startPositionY            300   // untested
-#define yClearance                406   // only for the red bot?
+#define startPositionX            100   // able to change
+#define startPositionY            300   // able ro change
+#define yClearance                406
 
 #ifdef RED_BOT
 #define TURRET_LEFT               998   // only for red bot
 #define TURRET_RIGHT              453   // only for red bot
 #define TURRET_CENTER             718.5 // only for red bot
 #else
-#define TURRET_LEFT               1001  // only for black bot
-#define TURRET_RIGHT              925   // only for black bot
-#define TURRET_CENTER             964   // only for black bot
+#define TURRET_LEFT               1001
+#define TURRET_RIGHT              925
+#define TURRET_CENTER             964 
 #endif
 
 #define TURRET_NONE               0
-#define turretOffset              30.48
 
 enum POVButtons {R, T, L, B};
 
@@ -68,7 +67,7 @@ using namespace frc;
 
 class Arm {
   public:
-    float turretPosition, shoulderAngle, elbowAngle, curX, curY;
+    float turretPosition, shoulderAngle, elbowAngle, curX, curY, turretAngle;
     bool startPosition, startPositionReal;
 
     Arm(int shoulderMotor, int elbowMotor, int turretMotor, int shoulderPot);
@@ -88,7 +87,7 @@ class Arm {
 
     void SetMotors();
     void ArmInit();
-    bool ThirtyInchLimit();
+    bool ThirtyInchLimit(float turretAngle);
     bool validElbowPosition(double pos);
     double computeElbowPosition(double angle);
     double computeElbowAngle();
@@ -99,7 +98,6 @@ class Arm {
     bool FindArmAngles(float x, float y, float *ang1, float *ang2);
     bool HardPID(CANSparkMax *motor, float currentPosition, float finalPosition, float fastThreshold, float slowThreshold);
     bool HardPID(WPI_TalonSRX *motor, float currentPosition, float finalPosition, float fastThreshold, float slowThreshold);
-    // void FindArmMinMax(float base, float *elbowMin, float *elbowMax);
     float DeadZone(float input, float range);
 };
 
