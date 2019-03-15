@@ -26,7 +26,7 @@ Robot::RobotInit()
 
     m_arm = new Arm(SHOULDER_MOTOR, ELBOW_MOTOR, TURRET_MOTOR, 0);
     m_claw = new Claw(CLAW_MOTOR, 0);
-    CameraServer::GetInstance()->StartAutomaticCapture();
+    // CameraServer::GetInstance()->StartAutomaticCapture();
 
 #ifdef USE_LIDAR
     microLidar = new MicroLidar("/dev/i2c-2", MicroLidar::CONTINUOUS_MEASURE_MODE);
@@ -55,16 +55,13 @@ Robot::RobotPeriodic()
 void
 Robot::AutonomousInit() 
 {
-     ahrs->ZeroYaw();
+    TeleopInit();
 }
 
 void
 Robot::AutonomousPeriodic()
 {
-    static int step = 0;
-    if(step == 0) {
-        
-    }
+    TeleopPeriodic();
 }
 
 void
