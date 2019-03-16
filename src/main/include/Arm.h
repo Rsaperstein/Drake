@@ -49,9 +49,9 @@ using namespace std;
 #define yClearance                406
 
 #ifdef RED_BOT
-#define TURRET_LEFT               998   // only for red bot
-#define TURRET_RIGHT              453   // only for red bot
-#define TURRET_CENTER             718.5 // only for red bot
+#define TURRET_LEFT               998
+#define TURRET_RIGHT              453
+#define TURRET_CENTER             718.5
 #else
 #define TURRET_LEFT               1001
 #define TURRET_RIGHT              925
@@ -60,15 +60,16 @@ using namespace std;
 
 #define TURRET_NONE               0
 
-enum POVButtons {R, T, L, B};
+const float SAFE_SHOULDER_ANGLE = acos((711 + armBaseSideX - turretOffset - highArmLength - clawLength) / lowArmLength);
 
+enum POVButtons {R, T, L, B};
 
 using namespace frc;
 
 class Arm {
   public:
-    float turretPosition, shoulderAngle, elbowAngle, curX, curY, turretAngle;
-    bool startPosition, startPositionReal;
+    float turretPosition, shoulderAngle, elbowAngle, curX, curY, turretAngle, shoulderAngleTestMem, elbowAngleTestMem;
+    bool startPosition, startPositionReal, shoulderOverride, init;
 
     Arm(int shoulderMotor, int elbowMotor, int turretMotor, int shoulderPot);
     Arm(CANSparkMax *shoulderMotor, WPI_TalonSRX *elbowMotor, 
@@ -85,9 +86,9 @@ class Arm {
     AnalogPotentiometer *m_shoulderPot;
     PIDController *m_shoulderController;
 
-    void SetMotors();
+    void SetMotors(float overrideAllow);
     void ArmInit();
-    bool ThirtyInchLimit(float turretAngle);
+    bool Within30InchLimit(float turretAngle);
     bool validElbowPosition(double pos);
     double computeElbowPosition(double angle);
     double computeElbowAngle();
