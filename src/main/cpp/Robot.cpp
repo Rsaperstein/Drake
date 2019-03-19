@@ -14,7 +14,7 @@
 
 void
 Robot::RobotInit() 
-{  
+{   
     m_drive      = new DalekDrive(1, 2, 3, 4, DalekDrive::driveType::kMecanum);
     m_leftStick  = new frc::Joystick(1);
     //m_rightStick = new frc::Joystick(2);
@@ -76,6 +76,7 @@ Robot::TeleopPeriodic()
 {
     bool calibrated = !(ahrs->IsCalibrating());
     SmartDashboard::PutBoolean("NAV-X calibrated", calibrated);
+    SmartDashboard::PutBoolean("Dpad[L]", m_dPad[L]->Get());
 
     // pick one to test, all should in principle work for the mecanum wheels
     // m_drive->TankDrive(m_leftStick, m_rightStick, false);

@@ -60,6 +60,9 @@ Arm::ArmInit()
     m_turretMotor->ConfigPeakCurrentLimit(40);
     m_turretMotor->ConfigClosedloopRamp(0.5);
 
+    shoulderOverride = false;
+    init = true;
+
     //Starting position
     curX = 100; //609.6
     curY = 300; //609.6
@@ -88,9 +91,8 @@ void
 Arm::Tick(XboxController *xbox, POVButton *dPad[])
 {   
     float turretMove = DeadZone(xbox->GetX(GenericHID::JoystickHand::kRightHand), .3) * .5;
-    float x = curX;
-    float y = curY;
-    bool move = true;
+    float x = curX, y = curY;
+    bool move = true, overrideAllow = false;
     m_turretMotor->Set(0);
     if (xbox->GetAButton()) {
         if (dPad[R]->Get()) {
@@ -146,11 +148,22 @@ Arm::Tick(XboxController *xbox, POVButton *dPad[])
         turretPosition = TURRET_CENTER;
     } else {
         move = false;
-        elbowAngle += (DeadZone(xbox->GetY(GenericHID::JoystickHand::kRightHand), .4) * -.01);
-        shoulderAngle += (DeadZone(xbox->GetY(GenericHID::JoystickHand::kLeftHand), .4) * .02);
+        float shoulderAdd = (DeadZone(xbox->GetY(GenericHID::JoystickHand::kLeftHand), .4) * .02),
+              elbowAdd = (DeadZone(xbox->GetY(GenericHID::JoystickHand::kRightHand), .4) * -.01);
+        shoulderAngle += shoulderAdd;
+        elbowAngle += elbowAdd;
+        if (shoulderAdd > 0 && elbowAdd == 0) {
+            overrideAllow = true;
+        }
     }
     if (move) {
+        float shoulderAngleMem = shoulderAngle, elbowAngleMem = elbowAngle;
         moveToPosition(x, y);
+        if (((shoulderAngle + elbowAngle - M_PI > 0 && shoulderAngleMem + elbowAngleMem - M_PI < 0) ||
+            (shoulderAngle + elbowAngle - M_PI < 0 && shoulderAngleMem + elbowAngleMem - M_PI > 0)) &&
+            shoulderAngleMem < SAFE_SHOULDER_ANGLE) {
+                shoulderOverride = true;
+            }
     } else {
         if (xbox->GetBackButton()) {
             turretPosition = TURRET_LEFT;
@@ -165,7 +178,8 @@ Arm::Tick(XboxController *xbox, POVButton *dPad[])
             }
         }
     }
-    SetMotors();
+    SetMotors(overrideAllow);
+    init = false;
 }
 
 void
@@ -187,7 +201,7 @@ double
 Arm::computeElbowAngle()
 {
 #ifdef RED_BOT
-    return 0;                               // not found
+    return -.00572901 * m_elbowMotor->GetSelectedSensorPosition(0) + 3.94251;
 #else
     return -.00591263 * m_elbowMotor->GetSelectedSensorPosition(0) + 3.954;
 #endif
@@ -196,7 +210,7 @@ Arm::computeElbowAngle()
 double
 Arm::computeShoulderAngle() {
 #ifdef RED_BOT
-    return 0;                               // not found
+    return 5.9427 * m_shoulderPot->Get() - 1.43229;
 #else
     return 5.95463 * m_shoulderPot->Get() - .0799629;
 #endif
@@ -204,7 +218,7 @@ Arm::computeShoulderAngle() {
 
 double Arm::computeTurretAngle() {
 #ifdef RED_BOT
-    return 0;                               // not found
+    return -0.00576312 * m_turretMotor->GetSelectedSensorPosition(0) + 4.1677;
 #else
     return -0.0413272 * m_turretMotor->GetSelectedSensorPosition(0) + 39.8119;
 #endif
@@ -252,20 +266,22 @@ Arm::validShoulderPosition(double pos)
 }
 
 bool
-Arm::ThirtyInchLimit(float turretAngle) {
+Arm::Within30InchLimit(float turretAngle) {
     float xTry = abs(armBaseFrontX / cos(abs(turretAngle))),
           yTry = abs(armBaseSideX / cos(M_PI / 2 - abs(turretAngle))),
 	      x0 = lowArmLength * cos(computeShoulderAngle()) + highArmLength
             * cos(computeShoulderAngle() + computeElbowAngle() - M_PI) + clawLength;
 	if (xTry < yTry) {
-		return (x0 * cos(abs(turretAngle)) - armBaseFrontX + turretOffset) < 762;
+        SmartDashboard::PutNumber("CALC_X", (x0 * cos(abs(turretAngle)) - armBaseFrontX + turretOffset) / 25.4);
+		return (x0 * cos(abs(turretAngle)) - armBaseFrontX + turretOffset) < 711;
 	} else {
-		return (x0 * cos(M_PI / 2 - abs(turretAngle)) - armBaseSideX + turretOffset) < 762;
+        SmartDashboard::PutNumber("CALC_X", (x0 * cos(M_PI / 2 - abs(turretAngle)) - armBaseSideX + turretOffset) / 25.4);
+		return (x0 * cos(M_PI / 2 - abs(turretAngle)) - armBaseSideX + turretOffset) < 711;
 	}
 }
 
 void
-Arm::SetMotors() 
+Arm::SetMotors(float overrideAllow)
 {
     double elbowPosition;
     double shoulderPosition;
@@ -275,8 +291,20 @@ Arm::SetMotors()
     // to do the PID control loop in software.  Elbow has a fairly large error
     // which varies over the range +/- 20 units. Shoulder moves slowly to it's
     // position, which may or may not be an issue.
+    
+    //if we are out of bounds initially, comment out this whole loop then re-deploy
+    if (!overrideAllow && !init) {
+        if (Within30InchLimit(computeTurretAngle())) {
+            elbowAngleTestMem = computeElbowAngle();
+            shoulderAngleTestMem = computeShoulderAngle();
+        } else {
+            shoulderAngle = shoulderAngleTestMem;
+            elbowAngle = elbowAngleTestMem;
+        }
+    }
     float yHeight = armBaseHeight + lowArmLength * sin(shoulderAngle) + highArmLength * sin(shoulderAngle + elbowAngle - M_PI);
     if (startPosition) {
+        // if we cannot move to start position safely
         if (abs(m_turretMotor->GetSelectedSensorPosition(0) - TURRET_CENTER) > 35 && (yHeight < yClearance || (curY == yClearance + 125 && curX == 150 && abs(computeShoulderPosition(shoulderAngle) - m_shoulderPot->Get()) >= .001))) {
             curX = 150;
             curY = yClearance + 125;
@@ -291,24 +319,30 @@ Arm::SetMotors()
                 curY = startPositionY;
                 moveToPosition(curX, curY);
             }
-        }  
+        }
     } else {
         if (startPositionReal) {
-            if (HardPID(m_shoulderMotor, m_shoulderPot->Get(), computeShoulderPosition(shoulderAngle), .01, .001)) {
+            if (HardPID(m_shoulderMotor, m_shoulderPot->Get(), computeShoulderPosition(shoulderAngle), .005, .001)) {
                 m_elbowMotor->Set(ctre::phoenix::motorcontrol::ControlMode::Position, computeElbowPosition(elbowAngle));
                 startPositionReal = false;
             }
         } else {
             elbowPosition = computeElbowPosition(elbowAngle);
-            if(validElbowPosition(elbowPosition)) {
-                m_elbowMotor->Set(ctre::phoenix::motorcontrol::ControlMode::Position, elbowPosition);
-            }
-
             shoulderPosition = computeShoulderPosition(shoulderAngle);
-            if(validShoulderPosition(shoulderPosition)) {
-                HardPID(m_shoulderMotor, m_shoulderPot->Get(), shoulderPosition, .01, .001);
-                // m_shoulderController->SetSetpoint(shoulderPosition);
-                // m_shoulderController->SetEnabled(true);
+            if (shoulderOverride && !init) {
+                if (HardPID(m_shoulderMotor, m_shoulderPot->Get(), computeShoulderPosition(SAFE_SHOULDER_ANGLE), .005, .001)) {
+                    m_elbowMotor->Set(ctre::phoenix::motorcontrol::ControlMode::Position, elbowPosition);
+                    shoulderOverride = false;
+                }
+            } else {
+                if(validElbowPosition(elbowPosition)) {
+                    m_elbowMotor->Set(ctre::phoenix::motorcontrol::ControlMode::Position, elbowPosition);
+                }
+                if(validShoulderPosition(shoulderPosition)) {
+                    HardPID(m_shoulderMotor, m_shoulderPot->Get(), shoulderPosition, .005, .001);
+                    // m_shoulderController->SetSetpoint(shoulderPosition);
+                    // m_shoulderController->SetEnabled(true);
+                }
             }
             if (turretPosition != TURRET_NONE) {
                 HardPID(m_turretMotor, m_turretMotor->GetSelectedSensorPosition(0), turretPosition, 20, 5);
@@ -405,6 +439,7 @@ Arm::printInfo()
     SmartDashboard::PutNumber("Elbow Angle", computeElbowAngle() * 180.0 / M_PI);
     SmartDashboard::PutNumber("Preset X", curX / 25.4);
     SmartDashboard::PutNumber("Preset Y", curY / 25.4);
-
-    SmartDashboard::PutBoolean("Within 30\" range?", ThirtyInchLimit(computeTurretAngle()));
+    SmartDashboard::PutNumber("Preset Shoulder", shoulderAngle * 180 / M_PI);
+    SmartDashboard::PutNumber("Preset Elbow", elbowAngle * 180 / M_PI);
+    SmartDashboard::PutBoolean("Within 30\" range?", Within30InchLimit(computeTurretAngle()));
 }
