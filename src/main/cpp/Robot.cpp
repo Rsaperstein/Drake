@@ -14,7 +14,7 @@
 
 void
 Robot::RobotInit() 
-{  
+{   
     m_drive      = new DalekDrive(1, 2, 3, 4, DalekDrive::driveType::kMecanum);
     m_leftStick  = new frc::Joystick(1);
     //m_rightStick = new frc::Joystick(2);
@@ -26,7 +26,7 @@ Robot::RobotInit()
 
     m_arm = new Arm(SHOULDER_MOTOR, ELBOW_MOTOR, TURRET_MOTOR, 0);
     m_claw = new Claw(CLAW_MOTOR, 0);
-    CameraServer::GetInstance()->StartAutomaticCapture();
+    // CameraServer::GetInstance()->StartAutomaticCapture();
 
 #ifdef USE_LIDAR
     microLidar = new MicroLidar("/dev/i2c-2", MicroLidar::CONTINUOUS_MEASURE_MODE);
@@ -55,16 +55,13 @@ Robot::RobotPeriodic()
 void
 Robot::AutonomousInit() 
 {
-     ahrs->ZeroYaw();
+    TeleopInit();
 }
 
 void
 Robot::AutonomousPeriodic()
 {
-    static int step = 0;
-    if(step == 0) {
-        
-    }
+    TeleopPeriodic();
 }
 
 void
@@ -79,6 +76,7 @@ Robot::TeleopPeriodic()
 {
     bool calibrated = !(ahrs->IsCalibrating());
     SmartDashboard::PutBoolean("NAV-X calibrated", calibrated);
+    SmartDashboard::PutBoolean("Dpad[L]", m_dPad[L]->Get());
 
     // pick one to test, all should in principle work for the mecanum wheels
     // m_drive->TankDrive(m_leftStick, m_rightStick, false);

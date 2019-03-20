@@ -19,12 +19,13 @@
 using namespace rev;
 using namespace std;
 
-// in millimeters (check these)
 #define armBaseHeight             342.9
 #define armBaseFrontX             387.35
 #define armBaseSideX              342.9
 #define lowArmLength              812.8
 #define highArmLength             1079.5
+#define clawLength                228.6
+#define turretOffset              30.48
 
 #define defaultX                  300 // able to change this
 #define cargoHatchHeight          298
@@ -33,13 +34,13 @@ using namespace std;
 #define rocketHatchLowHeight      298
 #define rocketBallLowHeight       749
 #define rocketHatchMiddleHeight   1048
-#define rocketBallMiddleHeight    1422
+#define rocketBallMiddleHeight    1422 // in red bot -> preset is a few inches too high
 #define rocketHatchTopHeight      1740
 #define rocketBallTopHeight       2096
 #define ballPickUpX               279 
-#define rocketTopHeightX          76
+#define rocketTopHeightX          150
 #define ballPickUpY               165 
-#define discLoadHeight            228
+#define discLoadHeight            190
 #define ballLoadHeight            1101
 #define ballLoadX                 368
 #define rocketTopHeightBallX      76
@@ -50,21 +51,28 @@ using namespace std;
 #define sensorPivotPointX         234.95
 #define sensorPivotPointY         190.5   
 
-#define TURRET_LEFT               998   // only for red bot
-#define TURRET_RIGHT              453   // only for red bot
-#define TURRET_CENTER             718.5 // only for red bot
+#ifdef RED_BOT
+#define TURRET_LEFT               998
+#define TURRET_RIGHT              453
+#define TURRET_CENTER             718.5
+#else
+#define TURRET_LEFT               1001
+#define TURRET_RIGHT              925
+#define TURRET_CENTER             964 
+#endif
+
 #define TURRET_NONE               0
-#define turretOffset              30.48
+
+const float SAFE_SHOULDER_ANGLE = acos((711 + armBaseSideX - turretOffset - highArmLength - clawLength) / lowArmLength);
 
 enum POVButtons {R, T, L, B};
-
 
 using namespace frc;
 
 class Arm {
   public:
-    float turretPosition, shoulderAngle, elbowAngle, curX, curY;
-    bool startPosition, startPositionReal;
+    float turretPosition, shoulderAngle, elbowAngle, curX, curY, turretAngle, shoulderAngleTestMem, elbowAngleTestMem;
+    bool startPosition, startPositionReal, shoulderOverride, init;
 
     Arm(int shoulderMotor, int elbowMotor, int turretMotor, int shoulderPot);
     Arm(CANSparkMax *shoulderMotor, WPI_TalonSRX *elbowMotor, 
@@ -82,13 +90,17 @@ class Arm {
     AnalogPotentiometer *m_shoulderPot;
     PIDController *m_shoulderController;
     MicroLidar *microLidar;
-  
-    void SetMotors();
+
+    void SetMotors(float overrideAllow);
     void ArmInit();
+    bool Within30InchLimit(float turretAngle);
     bool validElbowPosition(double pos);
     double computeElbowPosition(double angle);
+    double computeElbowAngle();
     bool validShoulderPosition(double pos);
     double computeShoulderPosition(double angle);
+    double computeShoulderAngle();
+    double computeTurretAngle();
     bool FindArmAngles(float x, float y, float *ang1, float *ang2);
     // void FindArmMinMax(float base, float *elbowMin, float *elbowMax);
     bool HardPID(CANSparkMax *motor, float currentPosition, float finalPosition, float fastThreshold, float slowThreshold);
