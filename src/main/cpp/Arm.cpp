@@ -273,7 +273,15 @@ Arm::computeShoulderPosition(double angle)
     // Old numbers: angle * 0.0837496 + 0.393355
 #else // BLACK_BOT
     return .167931 * angle + .134296; // input angle output pot values
+#endif
+}
+bool
 Arm::validShoulderPosition(double pos)
+{
+    // need to figure out valid values for red and black bots
+    return true;
+}
+
 
 bool
 Arm::Within30InchLimit(float turretAngle) {
